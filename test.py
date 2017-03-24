@@ -5,7 +5,7 @@ import json
 import pandas as pd
 import re
 import time
-
+import numpy as np
 
 def tf(word, blob):
     return blob.words.count(word)
@@ -152,6 +152,40 @@ def calc_C4(bloblist, word, sent_asp, aspnum):
             continue
     return count
 
+def calc_C2(bloblist, word, sent_asp, aspnum):
+    aspect_loc = dict(filter(lambda x: aspnum not in x[1], sent_asp.items()))
+    sentences = []
+    for loc in list(aspect_loc.keys()):
+        sentences += bloblist[loc[0]][loc[1]].words
+    C2 = sentences.count(word)
+    return C2
+
+def calc_C3(bloblist, word, sent_asp, aspnum):
+    aspect_loc = dict(filter(lambda x: aspnum in x[1], sent_asp.items()))
+    count = 0
+    for loc in list(aspect_loc.keys()):
+        sentences = bloblist[loc[0]][loc[1]].words
+        if word not in sentences:
+            count += 1
+        else:
+            continue
+    return count
+
+
+c1 = calc_C1(test_v1,'films',test_v2,1)
+c2 = calc_C2(test_v1,'films',test_v2,1)
+c3 = calc_C3(test_v1,'films',test_v2,1)
+c4 = calc_C4(test_v1,'films',test_v2,1)
+c = total_C([document1,document2,document3])
+
+c1 = calc_C1(test_v1,'film',test_v2,1)
+c2 = calc_C2(test_v1,'film',test_v2,1)
+c3 = calc_C3(test_v1,'film',test_v2,1)
+c4 = calc_C4(test_v1,'film',test_v2,1)
+c = total_C([document1,document2,document3])
+
+
+(c*(c1*c4-c2*c3)) / (c1+c3) * (c2+c4) * (c1+c2) * (c3+c4)
 
     
 """
