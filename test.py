@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+-*- coding: utf-8 -*-
 from collections import Counter
 from textblob import TextBlob as tb
 import json
@@ -45,7 +45,7 @@ collectors and writers such as Jeff Cooper, Ian V. Hogg, Chuck Hawks, Leroy
 Thompson, Renee Smeets and Martin Dougherty have described the Python as the
 finest production revolver ever made."""
 
-aspect = {1 : ["films","film","california"], 2 : ["genus","among","currntly"],3 : ["magnum","revolver","colt"] }
+aspects = {1 : ["films","film","california"], 2 : ["genus","among","currntly"],3 : ["magnum","revolver","colt"] }
 
 
 def blob_maker(doc): #input as a string
@@ -123,7 +123,7 @@ def total_C(docs):
     total_wscore = {word : text_blob.words.count(word) for word in text_blob.words}
     selected_word = dict(filter(lambda x: x[1] > 1, total_wscore.items()))
     C = sum(selected_word.values())
-    return C
+    return C, selected_word
 
 
 """
@@ -187,7 +187,42 @@ c = total_C([document1,document2,document3])
 
 (c*(c1*c4-c2*c3)) / (c1+c3) * (c2+c4) * (c1+c2) * (c3+c4)
 
-    
+##Vectorized implementation
+c,words = total_C([document1,document2,document3])
+
+def c_list(bloblist, wordlist, sent_asp, aspnum):
+    c1 = np.array([],dtype = np.float32)
+    c2 = np.array([],dtype = np.float32)
+    c3 = np.array([],dtype = np.float32)
+    c4 = np.array([],dtype = np.float32)
+    for word in wordlist:
+        c1 = np.append(c1, calc_C1(bloblist,word,sent_asp,aspnum)) 
+        c2 = np.append(c2, calc_C2(bloblist,word,sent_asp,aspnum))
+        c3 = np.append(c3, calc_C3(bloblist,word,sent_asp,aspnum))
+        c4 = np.append(c4, calc_C4(bloblist,word,sent_asp,aspnum))
+    return c1,c2,c3,c4
+        
+#repeat until 10 iteration
+Xscore=np.array([])
+test_v2 = aspect_segment(test_v1,aspects)
+
+for aspect in aspects.keys():
+    c1,c2,c3,c4 = c_list(test_v1,words,test_v2, aspect)
+    temp = (c*((c1*c4-c2*c3)**2)) / ((c1+c3) * (c2+c4) * (c1+c2) * (c3+c4))
+    Xscore = np.hstack((Xscore,temp))
+Xscore = Xscore.reshape(len(aspects),len(words))
+
+
+#find the word with high Xsquare values and assign it to aspects dictionary
+for i in range(len(aspects)):
+    temp=Xscore.argsort(axis=1)[i,-5:]
+    print([list(words.keys())[i] for i in temp ])
+    aspects[i+1] = [list(words.keys())[i] for i in temp ]
+
+
+#수렴하지 않는다..... ㅆㅂ..... 데이터를 정제해서 다시 해보자
+
+
 """
 starttime = time.time()
 calc_C1(test_v1,'film',test_v2,1)
